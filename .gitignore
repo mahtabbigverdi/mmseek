@@ -1,0 +1,25 @@
+Qwen2.5-VL/qwen-vl-finetune/checkpoints/
+Qwen2.5-VL/qwen-vl-finetune/just_depth/
+Qwen2.5-VL/qwen-vl-finetune/wandb/
+Qwen2.5-VL/qwen-vl-finetune/cache/
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.env
+.venv/
+.env*
+.venv*
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Build
+dist/
+build/
