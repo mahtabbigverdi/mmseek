@@ -1,0 +1,4 @@
+  0%|                                                                    | 0/1562 [00:00<?, ?it/s]/gscratch/krishna/mahtab/miniconda3/envs/qwen2vl/lib/python3.10/site-packages/torch/utils/checkpoint.py:87: UserWarning: None of the inputs have requires_grad=True. Gradients will be None
+  warnings.warn(
+  1%|▋                                                       | 19/1562 [15:52<21:09:41, 49.37s/it]
+{'loss': 21.6152, 'grad_norm': 631.837041837186, 'learning_rate': 3.829787234042553e-08, 'epoch': 0.01}

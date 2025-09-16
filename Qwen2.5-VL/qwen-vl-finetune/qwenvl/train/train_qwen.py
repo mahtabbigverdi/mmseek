@@ -57,32 +57,8 @@ import torch.distributed as dist
 from deepspeed import zero as ds_zero
 def are_embeddings_tied(model):
     """Check if input and output embeddings are tied (share memory)."""
-    input_embeddings = model.get_input_embeddings()
-    output_embeddings = model.get_output_embeddings()
-    
-    # Basic null checks
-    if input_embeddings is None or output_embeddings is None:
-        return False
-    
-    # Check if they have weight attributes
-    if not hasattr(input_embeddings, 'weight') or not hasattr(output_embeddings, 'weight'):
-        return False
-    
-    input_weight = input_embeddings.weight
-    output_weight = output_embeddings.weight
-    
-    # Check if they're the same object (share memory)
-    if input_weight.data_ptr() == output_weight.data_ptr():
-        return True
-    
-    # Additional check: sometimes they might be different objects but still tied
-    # Check if they have the same shape and are likely to be tied
-    if (input_weight.shape == output_weight.shape and 
-        hasattr(model.config, 'tie_word_embeddings') and 
-        model.config.tie_word_embeddings):
-        return True
-    
-    return False
+    return model.config.tie_word_embeddings
+   
 
 def reinitialize_new_tokens(model, old_len, new_len):
     """Reinitialize only the embeddings for new tokens."""
@@ -95,7 +71,7 @@ def reinitialize_new_tokens(model, old_len, new_len):
         with deepspeed.zero.GatheredParameters(params_to_gather, modifier_rank=0):
             if dist.get_rank() == 0:
                 # Initialize only new tokens
-                print("^^^^^^^^^^^^^^", model.get_input_embeddings().weight.data.shape, model.get_output_embeddings().weight.data.shape, model.lm_head.weight.data.shape, old_len, new_len)
+                print("^^^^^^^^^^^^^^",is_tied, model.get_input_embeddings().weight.data.shape, model.get_output_embeddings().weight.data.shape, model.lm_head.weight.data.shape, old_len, new_len)
                 print(model.get_input_embeddings().weight.shape)
                 print(model.get_output_embeddings().weight.shape)
                 model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
