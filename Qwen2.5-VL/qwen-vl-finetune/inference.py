@@ -99,7 +99,7 @@
 
 import argparse
 import torch
-from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration, AutoTokenizer
 from qwen_vl_utils import process_vision_info
 
 # Optional: only if you're using external LoRA adapters (kept separate)
@@ -108,7 +108,7 @@ try:
     PEFT_AVAILABLE = True
 except Exception:
     PEFT_AVAILABLE = False
-DEFAULT_QWEN25_VL_TEMPLATE = "{% set image_count = namespace(value=0) %}{% set video_count = namespace(value=0) %}{% for message in messages %}{% if loop.first and message['role'] != 'system' %}<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n{% endif %}<|im_start|>{{ message['role'] }}\n{% if message['content'] is string %}{{ message['content'] }}<|im_end|>\n{% else %}{% for content in message['content'] %}{% if content['type'] == 'image' or 'image' in content or 'image_url' in content %}{% set image_count.value = image_count.value + 1 %}{% if add_vision_id %}Picture {{ image_count.value }}: {% endif %}<|vision_start|><|image_pad|><|vision_end|>{% elif content['type'] == 'video' or 'video' in content %}{% set video_count.value = video_count.value + 1 %}{% if add_vision_id %}Video {{ video_count.value }}: {% endif %}<|vision_start|><|video_pad|><|vision_end|>{% elif 'text' in content %}{{ content['text'] }}{% endif %}{% endfor %}<|im_end|>\n{% endif %}{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}"
+# DEFAULT_QWEN25_VL_TEMPLATE = "{% set image_count = namespace(value=0) %}{% set video_count = namespace(value=0) %}{% for message in messages %}{% if loop.first and message['role'] != 'system' %}<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n{% endif %}<|im_start|>{{ message['role'] }}\n{% if message['content'] is string %}{{ message['content'] }}<|im_end|>\n{% else %}{% for content in message['content'] %}{% if content['type'] == 'image' or 'image' in content or 'image_url' in content %}{% set image_count.value = image_count.value + 1 %}{% if add_vision_id %}Picture {{ image_count.value }}: {% endif %}<|vision_start|><|image_pad|><|vision_end|>{% elif content['type'] == 'video' or 'video' in content %}{% set video_count.value = video_count.value + 1 %}{% if add_vision_id %}Video {{ video_count.value }}: {% endif %}<|vision_start|><|video_pad|><|vision_end|>{% elif 'text' in content %}{{ content['text'] }}{% endif %}{% endfor %}<|im_end|>\n{% endif %}{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}"
 
 def load_model_and_processor(
     model_id_or_path: str,
@@ -136,12 +136,17 @@ def load_model_and_processor(
             # Permanently merge LoRA for faster inference
             model = model.merge_and_unload()
 
-    processor = AutoProcessor.from_pretrained(model_id_or_path)
+    processor = AutoProcessor.from_pretrained(model_id_or_path)  # has the image_processor inside
+    tok = AutoTokenizer.from_pretrained(model_id_or_path, use_fast=False)
+
+    processor.tokenizer = tok 
+    processor.chat_template = tok.chat_template
+
     return model, processor
 
 
 @torch.inference_mode()
-def generate_greedy(model, processor, messages, max_new_tokens=128):
+def generate_greedy(model, processor, messages, max_new_tokens):
     """
     messages: Chat-style list with mixed text and images, e.g.
       [{
@@ -157,8 +162,6 @@ def generate_greedy(model, processor, messages, max_new_tokens=128):
     messages,
     tokenize=False,
     add_generation_prompt=True,
-    chat_template= DEFAULT_QWEN25_VL_TEMPLATE,
-    add_vision_id=False,  # optional: shows "Picture 1:" / "Video 1:" if True
     )
     image_inputs, video_inputs = process_vision_info(messages)
 
@@ -175,27 +178,27 @@ def generate_greedy(model, processor, messages, max_new_tokens=128):
         **inputs,
         max_new_tokens=max_new_tokens,
         do_sample=False,          # <-- greedy
-        temperature=0.0,          # <-- explicit zero temp (redundant when do_sample=False)
         num_beams=1,
         use_cache=True,
     )
     # Trim the prompt part before decoding
     trimmed = [out[len(inp):] for inp, out in zip(inputs.input_ids, gen_ids)]
-    # out_text = processor.batch_decode(trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-    out_text = processor.batch_decode(gen_ids)
+    out_text = processor.batch_decode(trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+    # out_text = processor.batch_decode(gen_ids)
     return out_text[0]
 
 
 def main():
     parser = argparse.ArgumentParser()
-    model =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/just_depth"   # or just "/path/to/your/output_dir"
+    model =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/3b_aurora_batch16_accum1"  
+    # model ="/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/7b_aurora/checkpoint-1200"
     lora_adapter = None
     merge_lora = False
     max_new_tokens = 1024
-    image = "/mmfs1/gscratch/krishna/mahtab/AiT/vae/ADE_blink_5points/ADE_train_00018097.jpg"
+    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink5pointscenter/10.png"
     # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
-    # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?\nTo answer this question, let's think through it step by step, and we know the image is 336 x 336. First, what are the coordinates of points in the image? Second, what is the depth map for the image? Which point has a higher pixel value on the depth map? Remember, higher values indicate that the point is closer to the camera."
-    prompt = "What is the depth map of the image?"
+    prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?\nTo answer this question, let's think through it step by step, and we know the image is 336 x 336. First, what are the coordinates of points in the image? Second, what is the depth map for the image? Which point has a higher pixel value on the depth map? Remember, higher values indicate that the point is closer to the camera."
+    # prompt = "What is the depth map of the image?"
     dtype = torch.bfloat16 if torch.cuda.is_available() else "auto"
     model, processor = load_model_and_processor(
         model,

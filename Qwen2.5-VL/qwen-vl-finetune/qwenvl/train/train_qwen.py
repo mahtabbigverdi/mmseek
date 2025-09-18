@@ -65,28 +65,23 @@ def reinitialize_new_tokens(model, old_len, new_len):
     is_tied =  are_embeddings_tied(model)
     if is_deepspeed_zero3_enabled():
         params_to_gather = [model.get_input_embeddings().weight]
-        if not is_tied:
-            params_to_gather.append(model.get_output_embeddings().weight)
+        params_to_gather.append(model.get_output_embeddings().weight)
         
         with deepspeed.zero.GatheredParameters(params_to_gather, modifier_rank=0):
             if dist.get_rank() == 0:
-                # Initialize only new tokens
-                print("^^^^^^^^^^^^^^",is_tied, model.get_input_embeddings().weight.data.shape, model.get_output_embeddings().weight.data.shape, model.lm_head.weight.data.shape, old_len, new_len)
-                print(model.get_input_embeddings().weight.shape)
-                print(model.get_output_embeddings().weight.shape)
-                model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
-                if is_tied:
-                    model.get_output_embeddings().weight.data[old_len:new_len] = model.get_input_embeddings().weight.data[old_len:new_len]
-                else:
-                    model.get_output_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
-    
-    else:
-        model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
+                with torch.no_grad(): 
+                    # Initialize only new tokens
+                    print("^^^^^^^^^^^^^^",is_tied, model.get_input_embeddings().weight.data.shape, model.get_output_embeddings().weight.data.shape, model.lm_head.weight.data.shape, old_len, new_len)
+                
+                    model.get_input_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
+                    if not is_tied:
+                        model.get_output_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
         
-        if is_tied:
-            model.get_output_embeddings().weight.data[old_len:new_len] = model.get_input_embeddings().weight.data[old_len:new_len]
-        else:
-            model.get_output_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
+    else:
+        with torch.no_grad(): 
+            model.get_input_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
+            if not is_tied:
+                model.get_output_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
 
 def rank0_print(*args):
     if local_rank == 0:
@@ -152,10 +147,12 @@ def set_model(model_args, model):
         for n, p in model.model.named_parameters():
             p.requires_grad = True
         model.lm_head.requires_grad = True
+        model.lm_head.weight.requires_grad = True
     else:
         for n, p in model.model.named_parameters():
             p.requires_grad = False
         model.lm_head.requires_grad = False
+        model.lm_head.weight.requires_grad = False
     
     if model_args.tune_embeddings:
         model.get_input_embeddings().weight.requires_grad = True
@@ -219,6 +216,10 @@ def train(attn_implementation="flash_attention_2"):
         padding_side="right",
         use_fast=False,
     )
+    ###prints
+    l = len(tokenizer)
+    print("Initial tokenizer length:", l,  tokenizer.encode("<|im_start|><|im_end|>"),tokenizer.decode([151643]))
+    print("&&&&&&&&&&&&&&&&&%%%%%%%%%%%%", tokenizer.decode([l-i for i in range(1,40)]))
 
     ## Newly added ##
     if model_args.new_tokens_file:
@@ -233,6 +234,8 @@ def train(attn_implementation="flash_attention_2"):
             model.config.vocab_size = math.ceil(new_len / 128) * 128
             print(f"Resized model embeddings from {num_emb} to {new_len}")
         reinitialize_new_tokens(model, old_len, new_len)
+        if are_embeddings_tied(model):
+            model.tie_weights() 
     ## Newly added ##            
 
     set_model(model_args, model)

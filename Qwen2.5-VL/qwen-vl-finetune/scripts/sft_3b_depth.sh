@@ -39,9 +39,7 @@ torchrun --nproc_per_node=$NPROC_PER_NODE \
          --bf16 \
          --per_device_train_batch_size 4 \
          --gradient_accumulation_steps 4 \
-         --learning_rate 2e-7 \
-         --mm_projector_lr 1e-5 \
-         --vision_tower_lr 1e-6 \
+         --learning_rate 1e-6 \
          --optim adamw_torch \
          --model_max_length 4096 \
          --data_flatten False \
@@ -50,7 +48,7 @@ torchrun --nproc_per_node=$NPROC_PER_NODE \
          --max_pixels 50176 \
          --min_pixels 784 \
          --base_interval 2 \
-         --num_train_epochs 3 \
+         --num_train_epochs 5 \
          --warmup_ratio 0.03 \
          --lr_scheduler_type "cosine" \
          --weight_decay 0 \
