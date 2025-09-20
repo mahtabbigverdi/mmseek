@@ -11,6 +11,7 @@ class ModelArguments:
     tune_embeddings: bool = field(default=False, metadata={"help": "Whether to make input embeddings trainable"})
     tune_mm_vision: bool = field(default=False)
     new_tokens_file: Optional[str] = field(default=None, metadata={"help": "Path to file containing new tokens to add"})
+    reinitialization_method: Optional[str] = field(default="random", metadata={"help": "Reinitialization method for new tokens"})
 
 @dataclass
 class DataArguments:

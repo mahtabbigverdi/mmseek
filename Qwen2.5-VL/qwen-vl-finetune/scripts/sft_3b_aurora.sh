@@ -32,6 +32,7 @@ torchrun --nproc_per_node=$NPROC_PER_NODE \
          --tune_mm_vision False \
          --tune_mm_mlp True \
          --tune_embeddings True \
+         --reinitialization_method random \
          --new_tokens_file $NEW_TOKENS_FILE_PATH \
          --dataset_use $DATASETS \
          --output_dir $OUTPUT_DIR \

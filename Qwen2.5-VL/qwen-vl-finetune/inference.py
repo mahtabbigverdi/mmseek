@@ -1,107 +1,11 @@
 
-# import torch
-# from PIL import Image
-# from transformers import (
-#     AutoTokenizer, AutoProcessor,
-#     Qwen2VLForConditionalGeneration, Qwen2_5_VLForConditionalGeneration
-# )
-
-# # ---- change these two paths ----
-# CKPT_DIR = "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints"   # or just "/path/to/your/output_dir"
-# AUX_DIR  = "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints"                   # where tokenizer + image_processor were saved
-
-# # Optional: switch to "sdpa" if you don't have flash-attn installed
-# ATTN_IMPL = "flash_attention_2"  # or "sdpa"
-
-# # If you trained a 2.5 model, flip this to True
-# IS_QWEN_2_5 = True
-
-# dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-
-# # 1) Load model from the checkpoint you want to try
-# ModelCls = Qwen2_5_VLForConditionalGeneration if IS_QWEN_2_5 else Qwen2VLForConditionalGeneration
-# tokenizer  = AutoTokenizer.from_pretrained(AUX_DIR, use_fast=False)
-# # import pdb; pdb.set_trace()
-# processor  = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct") 
-
-
-# model = ModelCls.from_pretrained(
-#     CKPT_DIR,
-#     torch_dtype=dtype,
-#     attn_implementation=ATTN_IMPL,
-#     device_map="auto",   # put layers on available GPU(s)
-# )
-# model.eval()
-
-# # 2) Load the UPDATED tokenizer + image processor you saved during training
-# #    (Your training script saves them at training_args.output_dir)
-#  # has the image_processor inside
-
-# # --- Safety check: the tokenizer must match the model's embedding size ---
-# tok_len = len(tokenizer)
-
-# emb_len = model.get_input_embeddings().num_embeddings
-# print(len(tokenizer), emb_len)
-# if tok_len > emb_len:
-#     if tok_len != emb_len:
-#         raise ValueError(
-#             f"Tokenizer size ({tok_len}) != model embeddings ({emb_len}). "
-#             f"Load the tokenizer saved in your training output_dir (AUX_DIR), not the base one."
-#         )
-
-# # 3) Helper: run a single image+text chat turn
-# def generate(image_path, user_text, max_new_tokens=1000, temperature=0):
-#     image = Image.open(image_path).convert("RGB")
-
-#     messages = [
-#         {
-#             "role": "user",
-#             "content": [
-#                 {"type": "image", "image": image},
-#                 {"type": "text",  "text": user_text},
-#             ],
-#         }
-#     ]
-
-#     # Qwen2-VL chat template
-#     prompt = processor.apply_chat_template(
-#         messages,
-#         tokenize=False,
-#         add_generation_prompt=True
-#     )
-
-#     inputs = processor(
-#         text=[prompt],
-#         images=[image],
-#         return_tensors="pt"
-#     ).to(model.device, dtype=dtype if dtype != torch.float32 else None)
-
-#     with torch.inference_mode():
-#         out = model.generate(
-#             **inputs,
-#             max_new_tokens=max_new_tokens,
-#             do_sample=temperature > 0.0,
-#             temperature=temperature,
-#         )
-
-#     # Only decode newly generated tokens
-#     gen_ids = out[:, inputs["input_ids"].shape[1]:]
-#     text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)[0]
-#     return text.strip()
-
-# if __name__ == "__main__":
-#     # Example: use one of your domain-specific new tokens directly in the prompt if you added them
-#     img_path = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink5pointscenter/1.png"
-#     question = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
-
-#     print(generate(img_path, question))
-
 
 import argparse
 import torch
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration, AutoTokenizer
 from qwen_vl_utils import process_vision_info
-
+from tqdm import tqdm
+import os
 # Optional: only if you're using external LoRA adapters (kept separate)
 try:
     from peft import PeftModel
@@ -172,7 +76,6 @@ def generate_greedy(model, processor, messages, max_new_tokens):
         padding=True,
         return_tensors="pt",
     ).to(model.device)
-
     # Deterministic decoding: no sampling, temperature ignored (set to 0 for clarity)
     gen_ids = model.generate(
         **inputs,
@@ -188,27 +91,7 @@ def generate_greedy(model, processor, messages, max_new_tokens):
     return out_text[0]
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    model =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/3b_aurora_batch16_accum1"  
-    # model ="/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/7b_aurora/checkpoint-1200"
-    lora_adapter = None
-    merge_lora = False
-    max_new_tokens = 1024
-    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink5pointscenter/10.png"
-    # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
-    prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?\nTo answer this question, let's think through it step by step, and we know the image is 336 x 336. First, what are the coordinates of points in the image? Second, what is the depth map for the image? Which point has a higher pixel value on the depth map? Remember, higher values indicate that the point is closer to the camera."
-    # prompt = "What is the depth map of the image?"
-    dtype = torch.bfloat16 if torch.cuda.is_available() else "auto"
-    model, processor = load_model_and_processor(
-        model,
-        lora_adapter=lora_adapter,
-        merge_lora=merge_lora,
-        dtype=dtype,
-        device_map="auto"
-    )
-
-    # Build messages (image + text, or text-only if no image)
+def eval(model, processor, prompt, image, max_new_tokens=1024):
     messages = [{
         "role": "user",
         "content": [
@@ -216,11 +99,78 @@ def main():
             {"type": "text", "text": prompt},
         ],
     }]
-    
-  
-
     output = generate_greedy(model, processor, messages, max_new_tokens=max_new_tokens)
-    print(output)
+    return output
+
+
+def save_evals(model, processor ,model_id):
+    blink3 ={}
+    blink4 ={}
+    blink5 ={}
+    for i in tqdm(range(124)):
+        print(f"Evaluating image {i}")
+        # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?\nTo answer this question, let's think through it step by step, and we know the image is 336 x 336. First, what are the coordinates of points in the image? Second, what is the depth map for the image? Which point has a higher pixel value on the depth map? Remember, higher values indicate that the point is closer to the camera."
+        # typ ="long"
+        prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
+        typ = "short"
+        ##blink3
+        image = f"/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/{i}.png"
+        assert os.path.exists(image), f"Image {image} does not exist"
+        try:
+            output = eval(model, processor, prompt, image)
+            blink3[i] = output
+        except Exception as e:
+            pass
+        ##blink4
+        image = f"/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink4pointscenter/{i}.png"
+        assert os.path.exists(image), f"Image {image} does not exist"
+        try:
+            output = eval(model, processor, prompt, image)
+            blink4[i] = output
+        except Exception as e:
+            pass
+        ##blink5
+        image = f"/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink5pointscenter/{i}.png"
+        assert os.path.exists(image), f"Image {image} does not exist"
+        try:
+            output = eval(model, processor, prompt, image)
+            blink5[i] = output
+        except Exception as e:
+            pass
+    
+    import json
+    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink3_{typ}.json", "w") as f:
+        json.dump(blink3, f)
+    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink4_{typ}.json", "w") as f:
+        json.dump(blink4, f)
+    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink5_{typ}.json", "w") as f:
+        json.dump(blink5, f)
+    
+    print(len(blink3), len(blink4), len(blink5))
+
+
+        
+
+
+
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    lora_adapter = None
+    merge_lora = False
+
+    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/3b_aurora_lr5e-5"  
+    dtype = torch.bfloat16 if torch.cuda.is_available() else "auto"
+    model, processor = load_model_and_processor(
+        model_name,
+        lora_adapter=lora_adapter,
+        merge_lora=merge_lora,
+        dtype=dtype,
+        device_map="auto"
+    )
+    save_evals(model, processor, model_name.split("/")[-1])
+
 
 
 if __name__ == "__main__":

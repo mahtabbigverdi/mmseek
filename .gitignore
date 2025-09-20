@@ -1,5 +1,6 @@
 Qwen2.5-VL/qwen-vl-finetune/checkpoints/
 Qwen2.5-VL/qwen-vl-finetune/wandb/
+Qwen2.5-VL/qwen-vl-finetune/outputs/
 Qwen2.5-VL/qwen-vl-finetune/cache/
 Qwen2.5-VL/qwen-vl-finetune/7b_aurora//
 .DS_Store

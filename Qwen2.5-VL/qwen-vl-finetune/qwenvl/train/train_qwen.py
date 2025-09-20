@@ -60,7 +60,7 @@ def are_embeddings_tied(model):
     return model.config.tie_word_embeddings
    
 
-def reinitialize_new_tokens(model, old_len, new_len):
+def reinitialize_new_tokens(model, old_len, new_len, method):
     """Reinitialize only the embeddings for new tokens."""
     is_tied =  are_embeddings_tied(model)
     if is_deepspeed_zero3_enabled():
@@ -71,17 +71,53 @@ def reinitialize_new_tokens(model, old_len, new_len):
             if dist.get_rank() == 0:
                 with torch.no_grad(): 
                     # Initialize only new tokens
-                    print("^^^^^^^^^^^^^^",is_tied, model.get_input_embeddings().weight.data.shape, model.get_output_embeddings().weight.data.shape, model.lm_head.weight.data.shape, old_len, new_len)
-                
-                    model.get_input_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
-                    if not is_tied:
-                        model.get_output_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
-        
+                    print("^^^^^^^^^^^^^^",is_tied,method, model.get_input_embeddings().weight.data.shape, model.get_output_embeddings().weight.data.shape, model.lm_head.weight.data.shape, old_len, new_len)
+                    if method == "random":
+                        model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
+                        if not is_tied:
+                            model.get_output_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
+                    
+                    elif method == "average":
+                        mean_input_embedding = model.get_input_embeddings().weight.data[:old_len].mean(dim=0)
+                        model.get_input_embeddings().weight.data[old_len:new_len] = mean_input_embedding.unsqueeze(0).repeat(new_len - old_len, 1)
+                        if not is_tied:
+                            mean_output_embedding = model.get_output_embeddings().weight.data[:old_len].mean(dim=0)
+                            model.get_output_embeddings().weight.data[old_len:new_len] = mean_output_embedding.unsqueeze(0).repeat(new_len - old_len, 1)
+                    
+                    elif method == "adaptive":
+                        mean_input_val = model.get_input_embeddings().weight.data[:old_len].mean()
+                        std_input_val =  model.get_input_embeddings().weight.data[:old_len].std()
+                        model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=mean_input_val, std=std_input_val)
+                        if not is_tied:
+                            mean_output_val = model.get_output_embeddings().weight.data[:old_len].mean()
+                            std_output_val =  model.get_output_embeddings().weight.data[:old_len].std()
+                            model.get_output_embeddings().weight.data[old_len:new_len].normal_(mean=mean_output_val, std=std_output_val)
+                    else:
+                        raise ValueError(f"Unsupported initialization method: {method}. Choose from 'random', 'average', or 'adaptive'.")
+
+                    
     else:
-        with torch.no_grad(): 
-            model.get_input_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
-            if not is_tied:
-                model.get_output_embeddings().weight.data[old_len:].normal_(mean=0.0, std=0.02)
+        with torch.no_grad():
+            if method == "random": 
+                model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
+                if not is_tied:
+                    model.get_output_embeddings().weight.data[old_len:new_len].normal_(mean=0.0, std=0.02)
+            elif method == "average":
+                mean_input_embedding = model.get_input_embeddings().weight.data[:old_len].mean(dim=0)
+                model.get_input_embeddings().weight.data[old_len:new_len] = mean_input_embedding.unsqueeze(0).repeat(new_len - old_len, 1)
+                if not is_tied:
+                    mean_output_embedding = model.get_output_embeddings().weight.data[:old_len].mean(dim=0)
+                    model.get_output_embeddings().weight.data[old_len:new_len] = mean_output_embedding.unsqueeze(0).repeat(new_len - old_len, 1)
+            elif method == "adaptive":
+                mean_input_val = model.get_input_embeddings().weight.data[:old_len].mean()
+                std_input_val =  model.get_input_embeddings().weight.data[:old_len].std()
+                model.get_input_embeddings().weight.data[old_len:new_len].normal_(mean=mean_input_val, std=std_input_val)
+                if not is_tied:
+                    mean_output_val = model.get_output_embeddings().weight.data[:old_len].mean()
+                    std_output_val =  model.get_output_embeddings().weight.data[:old_len].std()
+                    model.get_output_embeddings().weight.data[old_len:new_len].normal_(mean=mean_output_val, std=std_output_val)
+            else:
+                raise ValueError(f"Unsupported initialization method: {method}. Choose from 'random', 'average', or 'adaptive'.")
 
 def rank0_print(*args):
     if local_rank == 0:
@@ -233,7 +269,9 @@ def train(attn_implementation="flash_attention_2"):
             model.resize_token_embeddings(new_len, pad_to_multiple_of=128)
             model.config.vocab_size = math.ceil(new_len / 128) * 128
             print(f"Resized model embeddings from {num_emb} to {new_len}")
-        reinitialize_new_tokens(model, old_len, new_len)
+        print("********", model_args.reinitialization_method.lower(), are_embeddings_tied(model))
+        if model_args.reinitialization_method.lower() != "none":
+            reinitialize_new_tokens(model, old_len, new_len, model_args.reinitialization_method.lower())
         if are_embeddings_tied(model):
             model.tie_weights() 
     ## Newly added ##            
