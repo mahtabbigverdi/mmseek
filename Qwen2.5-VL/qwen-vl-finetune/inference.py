@@ -80,7 +80,7 @@ def generate_greedy(model, processor, messages, max_new_tokens):
     gen_ids = model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
-        do_sample=False,          # <-- greedy
+        do_sample=False,         
         num_beams=1,
         use_cache=True,
     )
@@ -111,8 +111,10 @@ def save_evals(model, processor ,model_id):
         print(f"Evaluating image {i}")
         # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?\nTo answer this question, let's think through it step by step, and we know the image is 336 x 336. First, what are the coordinates of points in the image? Second, what is the depth map for the image? Which point has a higher pixel value on the depth map? Remember, higher values indicate that the point is closer to the camera."
         # typ ="long"
-        prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
-        typ = "short"
+        # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
+        # typ = "short"
+        prompt = "What is the depth map for this image?"
+        typ = "depth"
         ##blink3
         image = f"/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/{i}.png"
         assert os.path.exists(image), f"Image {image} does not exist"
@@ -160,7 +162,8 @@ def main():
     lora_adapter = None
     merge_lora = False
 
-    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/3b_aurora_lr5e-5"  
+    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/7b_aurora_lr5e-5"  
+    # model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
     dtype = torch.bfloat16 if torch.cuda.is_available() else "auto"
     model, processor = load_model_and_processor(
         model_name,

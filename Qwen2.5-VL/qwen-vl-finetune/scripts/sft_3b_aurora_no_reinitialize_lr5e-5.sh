@@ -11,8 +11,8 @@ DEEPSPEED_CFG="/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune
 # ======================
 # Path Configuration
 # ======================
-MODEL_PATH="Qwen/Qwen2.5-VL-7B-Instruct"  # [ModelArguments] Pretrained model path
-OUTPUT_DIR="checkpoints/7b_aurora_lr5e-5"                   # Directory for saving checkpoints
+MODEL_PATH="Qwen/Qwen2.5-VL-3B-Instruct"  # [ModelArguments] Pretrained model path
+OUTPUT_DIR="checkpoints/3b_aurora_no_reinitialize_lr5e-5"                   # Directory for saving checkpoints
 CACHE_DIR="./cache"                          # [TrainingArguments] Cache directory for models
 NEW_TOKENS_FILE_PATH="/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/New_tokens.txt"
 # ======================
@@ -32,14 +32,14 @@ torchrun --nproc_per_node=$NPROC_PER_NODE \
          --tune_mm_vision False \
          --tune_mm_mlp True \
          --tune_embeddings True \
-         --reinitialization_method random \
+         --reinitialization_method none \
          --new_tokens_file $NEW_TOKENS_FILE_PATH \
          --dataset_use $DATASETS \
          --output_dir $OUTPUT_DIR \
          --cache_dir $CACHE_DIR \
          --bf16 \
          --per_device_train_batch_size 4 \
-         --gradient_accumulation_steps 8 \
+         --gradient_accumulation_steps 4 \
          --learning_rate 5e-5 \
          --optim adamw_torch \
          --model_max_length 4096 \
