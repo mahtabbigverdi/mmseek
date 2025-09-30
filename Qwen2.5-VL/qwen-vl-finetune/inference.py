@@ -80,7 +80,8 @@ def generate_greedy(model, processor, messages, max_new_tokens):
     gen_ids = model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
-        do_sample=False,         
+        do_sample=False, 
+        temperature=0,        
         num_beams=1,
         use_cache=True,
     )
@@ -113,8 +114,10 @@ def save_evals(model, processor ,model_id):
         # typ ="long"
         # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
         # typ = "short"
-        prompt = "What is the depth map for this image?"
+        prompt = ""
         typ = "depth"
+        # prompt = "What do you see in this image?"
+        # typ = "free"
         ##blink3
         image = f"/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/{i}.png"
         assert os.path.exists(image), f"Image {image} does not exist"
@@ -123,6 +126,7 @@ def save_evals(model, processor ,model_id):
             blink3[i] = output
         except Exception as e:
             pass
+        print(output)
         ##blink4
         image = f"/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink4pointscenter/{i}.png"
         assert os.path.exists(image), f"Image {image} does not exist"
@@ -151,6 +155,41 @@ def save_evals(model, processor ,model_id):
     print(len(blink3), len(blink4), len(blink5))
 
 
+
+
+def save_ade_evals(model, processor ,model_id):
+    prompt = ""
+    ade = {}
+    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/48.png"
+    output = eval(model, processor, prompt, image)
+    ade[0] = output
+
+    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/37.png"
+    output = eval(model, processor, prompt, image)
+    ade[1] = output
+
+    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/38.png"
+    output = eval(model, processor, prompt, image)
+    ade[2] = output
+
+
+    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/25.png"
+    output = eval(model, processor, prompt, image)
+    ade[3] = output
+
+
+    # image = "/mmfs1/gscratch/krishna/mahtab/AiT/vae/ADE_blink_5points/ADE_train_00000118.jpg"
+    # output = eval(model, processor, prompt, image)
+    # ade[4] = output
+    
+    import json
+    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_ade.json", "w") as f:
+        json.dump(ade, f)
+
+    print(len(ade))
+
+
+
         
 
 
@@ -162,7 +201,7 @@ def main():
     lora_adapter = None
     merge_lora = False
 
-    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/7b_aurora_lr5e-5"  
+    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/7B_just_depth"  
     # model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
     dtype = torch.bfloat16 if torch.cuda.is_available() else "auto"
     model, processor = load_model_and_processor(
@@ -173,6 +212,7 @@ def main():
         device_map="auto"
     )
     save_evals(model, processor, model_name.split("/")[-1])
+    # save_ade_evals(model, processor, model_name.split("/")[-1])
 
 
 

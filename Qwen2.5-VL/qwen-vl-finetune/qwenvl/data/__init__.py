@@ -5,9 +5,13 @@ DEPTH_AURORA = {
     "annotation_path": "/mmfs1/gscratch/krishna/mahtab/LLaVA/train_annealing_data.json",
     "data_path": "",
 }
+TEXT_AURORA = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/LLaVA/train_baselinewithcoords90k_annealing_data.json",
+    "data_path": "",
+}
 
 JUST_DEPTH = {
-    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/train_depth_20k.json",
+    "annotation_path": "/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/train_depth_20k_noquestion.json",
     "data_path": "",
 }
 
@@ -37,6 +41,7 @@ VIDEOCHATGPT = {
 }
 
 data_dict = {
+    "text_aurora": TEXT_AURORA,
     "depth_aurora": DEPTH_AURORA,
     "just_depth": JUST_DEPTH,
     "cambrian_737k": CAMBRIAN_737K,
