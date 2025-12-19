@@ -1,6 +1,159 @@
 import re
 
-# Define placeholders for dataset paths
+PERSPECTIVE_IMAGINEDEPTH_ONLY_VQGAN1024 = {
+   "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_imagine_onlydepth_perspective_vqgan1024.json",
+    "data_path": "",
+}
+
+
+PERSPECTIVE_IMAGINEDEPTH_ONLY_VQVAE = {
+   "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_imagine_onlydepth_perspective_vqvae.json",
+    "data_path": "",
+}
+
+PERSPECTIVE_DEPTH_ONLY_VQGAN1024 = {
+   "annotation_path":  "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_onlydepth_perspective_vqgan1024.json",
+    "data_path": "",
+}
+
+
+PATHTARCING_GRAY_RECONSTRUCT = {
+   "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_reconstruct_gray.json",
+    "data_path": "",
+}
+
+
+HABITAT_DEPTH_ONLY_VQVAE = {
+   "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_onlydepth_habitat_vqvae.json",
+    "data_path": "",
+}
+
+
+
+ADE_DEPTH_ONLY_VQVAE = {
+   "annotation_path":  "/mmfs1/gscratch/krishna/mahtab/mmseek/blip3o-edit-blip3o-next-edit-dev/just_depth_1x_vqvae.json",
+    "data_path": "",
+}
+
+PERSPECTIVE_DEPTH_ONLY_VQVAE = {
+   "annotation_path":  "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_onlydepth_perspective_vqvae.json",
+    "data_path": "",
+}
+
+PERSPECTIVE_IMAGE_16384 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_image_perspective_16384.json",
+    "data_path": "",
+}
+PERSPECTIVE_DEPTH_IMAGE_VQVAE = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_depthmap_image_perspective_vqvae.json",
+    "data_path": "",
+}
+
+PERSPECTIVE_GRAYSCALE_IMAGE_1024 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_grayscale_image_perspective_1024.json",
+    "data_path": "",
+}
+
+PERSPECTIVE_IMAGE_1024 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_image_perspective_1024.json",
+    "data_path": "",
+}
+
+
+PERSPECTIVE_DIRECT = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/train_direct_perspective.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_SKETCHTHOUGHT_16k = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_sketch_vqvae.json",
+    "data_path": "",
+}
+
+PATHTRACING_WITHHINT_2POINTS_16k = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_withhint.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_GRAYTHOUGHT_16k_VQGAN = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_grays_vqgan.json",
+    "data_path": "",
+}
+PATHTRACING_2POINTS_GRAYTHOUGHT_16k = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_grays.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_NEWDEPTHTHOUGHT_16k = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_newdepthmaps.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_DEPTHTHOUGHT_16k = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_16k_depthmaps.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_MMTHOUGHT_16384 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_vqgan16384_mmthought.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_MMTHOUGHT_1024 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_vqgan1024_mmthought.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_TEXTTHOUGHT = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_textthought.json",
+    "data_path": "",
+}
+
+
+
+PATHTRACING_2POINTS_IMAGETHOUGHT_16384 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_imagethought_16384.json",
+    "data_path": "",
+}
+
+
+PATHTRACING_2POINTS_IMAGETHOUGHT_1024 = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_imagethought_1024.json",
+    "data_path": "",
+}
+
+PATHTRACING_2POINTS_DIRECT = {
+    "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/Data/path_tracing_2point_direct.json",
+    "data_path": "",
+}
+
+
+
+DEPTH_SHORT_AURORA = {
+       "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/blip3o-edit-blip3o-next-edit-dev/only_interleaved_depth_1x_justanswer.json",
+        "data_path": "",
+
+}
+
+DEPTH_LONGTEXT_AURORA = {
+       "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/blip3o-edit-blip3o-next-edit-dev/only_interleaved_depth_1x_justtext.json",
+        "data_path": "",
+
+}
+
+
+DEPTH_VQVAE_LONG_AURORA = {
+       "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/blip3o-edit-blip3o-next-edit-dev/only_interleaved_depth_1x_vqvae.json",
+        "data_path": "",
+
+}
+
+DEPTH_VQGAN_LONG_AURORA = {
+       "annotation_path": "/mmfs1/gscratch/krishna/mahtab/mmseek/blip3o-edit-blip3o-next-edit-dev/only_interleaved_depth_1x_vqgan.json",
+        "data_path": "",
+
+}
+
 DEPTH_AURORA = {
     "annotation_path": "/mmfs1/gscratch/krishna/mahtab/LLaVA/train_annealing_data.json",
     "data_path": "",
@@ -41,6 +194,34 @@ VIDEOCHATGPT = {
 }
 
 data_dict = {
+    "pathtacing_withhint_2points_16k": PATHTRACING_WITHHINT_2POINTS_16k,
+    "pathtracing_gray_reconstruct": PATHTARCING_GRAY_RECONSTRUCT,
+    "habitat_depth_only_vqvae": HABITAT_DEPTH_ONLY_VQVAE,
+    "ade_depth_only_vqvae": ADE_DEPTH_ONLY_VQVAE,
+    "perspective_imaginedepth_vqgan1024": PERSPECTIVE_IMAGINEDEPTH_ONLY_VQGAN1024,
+    "perspective_depth_only_vqgan1024": PERSPECTIVE_DEPTH_ONLY_VQGAN1024,
+    "perspective_imaginedepth_vqvae": PERSPECTIVE_IMAGINEDEPTH_ONLY_VQVAE,
+    "perspective_depth_only_vqvae": PERSPECTIVE_DEPTH_ONLY_VQVAE,
+    "perspective_depth_image_vqvae": PERSPECTIVE_DEPTH_IMAGE_VQVAE,
+    "perspective_grayscale_image_1024": PERSPECTIVE_GRAYSCALE_IMAGE_1024,
+    "perspective_image_16384": PERSPECTIVE_IMAGE_16384,
+    "perspective_image_1024": PERSPECTIVE_IMAGE_1024,
+    "perspective_direct": PERSPECTIVE_DIRECT,
+    "pathtracing_2points_sketchthought_16k": PATHTRACING_2POINTS_SKETCHTHOUGHT_16k,
+    "pathtracing_2points_depththought_16k": PATHTRACING_2POINTS_DEPTHTHOUGHT_16k,
+    "pathtracing_2points_newdepththought_16k": PATHTRACING_2POINTS_NEWDEPTHTHOUGHT_16k,
+    "pathtracing_2points_graythought_16k": PATHTRACING_2POINTS_GRAYTHOUGHT_16k,
+    "pathtracing_2points_graythought_16k_vqgan": PATHTRACING_2POINTS_GRAYTHOUGHT_16k_VQGAN,
+    "pathtracing_2points_textthought": PATHTRACING_2POINTS_TEXTTHOUGHT,
+    "pathtracing_2points_imagethought_1024": PATHTRACING_2POINTS_IMAGETHOUGHT_1024,
+    "pathtracing_2points_direct": PATHTRACING_2POINTS_DIRECT,
+    "pathtracing_2points_imagethought_16384": PATHTRACING_2POINTS_IMAGETHOUGHT_16384,
+    "pathtracing_2points_mmthought_1024": PATHTRACING_2POINTS_MMTHOUGHT_1024,
+    "pathtracing_2points_mmthought_16384": PATHTRACING_2POINTS_MMTHOUGHT_16384,
+    "depth_vqgan_long_aurora": DEPTH_VQGAN_LONG_AURORA,
+    "depth_vqvae_long_aurora": DEPTH_VQVAE_LONG_AURORA,
+    "depth_short_aurora": DEPTH_SHORT_AURORA,
+    "depth_longtext_aurora": DEPTH_LONGTEXT_AURORA,
     "text_aurora": TEXT_AURORA,
     "depth_aurora": DEPTH_AURORA,
     "just_depth": JUST_DEPTH,

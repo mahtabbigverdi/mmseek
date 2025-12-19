@@ -267,9 +267,9 @@ def train(attn_implementation="flash_attention_2"):
         
         if new_len > num_emb:
             model.resize_token_embeddings(new_len, pad_to_multiple_of=128)
-            model.config.vocab_size = math.ceil(new_len / 128) * 128
-            print(f"Resized model embeddings from {num_emb} to {new_len}")
-        print("********", model_args.reinitialization_method.lower(), are_embeddings_tied(model))
+            model.config.vocab_size = model.get_input_embeddings().num_embeddings
+            print(f"Resized model embeddings from {num_emb} to {model.config.vocab_size}")
+        print("********", model_args.reinitialization_method.lower(), are_embeddings_tied(model), old_len, new_len)
         if model_args.reinitialization_method.lower() != "none":
             reinitialize_new_tokens(model, old_len, new_len, model_args.reinitialization_method.lower())
         if are_embeddings_tied(model):
@@ -277,7 +277,6 @@ def train(attn_implementation="flash_attention_2"):
     ## Newly added ##            
 
     set_model(model_args, model)
-
     if torch.distributed.get_rank() == 0:
         model.visual.print_trainable_parameters()
         model.model.print_trainable_parameters()

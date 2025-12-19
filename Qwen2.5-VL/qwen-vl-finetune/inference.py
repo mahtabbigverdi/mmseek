@@ -92,7 +92,7 @@ def generate_greedy(model, processor, messages, max_new_tokens):
     return out_text[0]
 
 
-def eval(model, processor, prompt, image, max_new_tokens=1024):
+def eval(model, processor, prompt, image, max_new_tokens=2048):
     messages = [{
         "role": "user",
         "content": [
@@ -114,7 +114,9 @@ def save_evals(model, processor ,model_id):
         # typ ="long"
         # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?"
         # typ = "short"
-        prompt = ""
+        # prompt = "Multiple points are circled on the image, labeled by letters beside each circle. Which point is the closest to the camera?\nTo answer this question, let's think through it step by step, and we know the image is 336 x 336. First, what are the coordinates of points in the image? Which point has a higher pixel value on the depth map? Remember, higher values indicate that the point is closer to the camera."
+        # typ = "onlytext"
+        prompt = "What is the depth map for this image?"
         typ = "depth"
         # prompt = "What do you see in this image?"
         # typ = "free"
@@ -144,49 +146,19 @@ def save_evals(model, processor ,model_id):
         except Exception as e:
             pass
     
-    import json
-    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink3_{typ}.json", "w") as f:
-        json.dump(blink3, f)
-    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink4_{typ}.json", "w") as f:
-        json.dump(blink4, f)
-    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink5_{typ}.json", "w") as f:
-        json.dump(blink5, f)
+        import json
+        with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink3_{typ}.json", "w") as f:
+            json.dump(blink3, f, indent=4)
+        with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink4_{typ}.json", "w") as f:
+            json.dump(blink4, f, indent=4)
+        with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink5_{typ}.json", "w") as f:
+            json.dump(blink5, f, indent=4)
+        print(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_blink5_{typ}.json")
     
     print(len(blink3), len(blink4), len(blink5))
 
 
 
-
-def save_ade_evals(model, processor ,model_id):
-    prompt = ""
-    ade = {}
-    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/48.png"
-    output = eval(model, processor, prompt, image)
-    ade[0] = output
-
-    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/37.png"
-    output = eval(model, processor, prompt, image)
-    ade[1] = output
-
-    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/38.png"
-    output = eval(model, processor, prompt, image)
-    ade[2] = output
-
-
-    image = "/mmfs1/gscratch/krishna/mahtab/Aurora-perception/Data/evals/hardblink/images/blink3pointscenter/25.png"
-    output = eval(model, processor, prompt, image)
-    ade[3] = output
-
-
-    # image = "/mmfs1/gscratch/krishna/mahtab/AiT/vae/ADE_blink_5points/ADE_train_00000118.jpg"
-    # output = eval(model, processor, prompt, image)
-    # ade[4] = output
-    
-    import json
-    with open(f"/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/outputs/{model_id}_ade.json", "w") as f:
-        json.dump(ade, f)
-
-    print(len(ade))
 
 
 
@@ -201,7 +173,7 @@ def main():
     lora_adapter = None
     merge_lora = False
 
-    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/7B_just_depth"  
+    model_name =  "/mmfs1/gscratch/krishna/mahtab/mmseek/Qwen2.5-VL/qwen-vl-finetune/checkpoints/3b_habitat_depth_only336_vqvae_10epochs_lr2e-4_random"  
     # model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
     dtype = torch.bfloat16 if torch.cuda.is_available() else "auto"
     model, processor = load_model_and_processor(
@@ -212,7 +184,6 @@ def main():
         device_map="auto"
     )
     save_evals(model, processor, model_name.split("/")[-1])
-    # save_ade_evals(model, processor, model_name.split("/")[-1])
 
 
 

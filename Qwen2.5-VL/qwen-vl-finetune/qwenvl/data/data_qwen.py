@@ -182,10 +182,9 @@ class LazySupervisedDataset(Dataset):
             list_data_dict += annotations
 
         rank0_print(f"Total training samples: {len(list_data_dict)}")
-
         if not data_args.data_sequential:
             random.shuffle(list_data_dict)  # Randomly shuffle the data for training
-
+        
         rank0_print("Formatting inputs...Skip in lazy mode")
         self.tokenizer = tokenizer
         self.list_data_dict = list_data_dict
@@ -234,7 +233,8 @@ class LazySupervisedDataset(Dataset):
     def process_image_unified(self, image_file):
         processor = copy.deepcopy(self.data_args.image_processor)
         image = Image.open(image_file).convert("RGB")
-
+        # image = image.resize((336, 336))
+        # print("%%%%%%%%",image.size)
         visual_processed = processor.preprocess(image, return_tensors="pt")
         image_tensor = visual_processed["pixel_values"]
         if isinstance(image_tensor, List):

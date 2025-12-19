@@ -46,9 +46,6 @@ torchrun --nproc_per_node=$NPROC_PER_NODE \
          --data_flatten False \
          --data_sequential True \
          --data_packing False \
-         --max_pixels 50176 \
-         --min_pixels 784 \
-         --base_interval 2 \
          --num_train_epochs 1 \
          --warmup_ratio 0.03 \
          --lr_scheduler_type "cosine" \
