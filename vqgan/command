@@ -1,0 +1,24 @@
+python vqgan_recon.py \
+  --config /mmfs1/gscratch/krishna/mahtab/mmseek/vqgan/vqgan_gumbel_f8_8192/configs/model.yaml \
+  --ckpt   /mmfs1/gscratch/krishna/mahtab/mmseek/vqgan/vqgan_gumbel_f8_8192/ckpts/last.ckpt \
+  --input  ./image/sample_000003_new_perspective.png \
+  --outdir ./recons --size 256
+
+python vqgan_recon.py \
+  --config /mmfs1/gscratch/krishna/mahtab/mmseek/vqgan/vqgan_gumbel_f8_8192/configs/model.yaml \
+  --ckpt   /mmfs1/gscratch/krishna/mahtab/mmseek/vqgan/vqgan_gumbel_f8_8192/ckpts/last.ckpt \
+  --input  ./image/floor2.png \
+  --outdir ./recons --size 256
+
+
+
+
+  python vqgan_recon.py \
+  --config /mmfs1/gscratch/krishna/mahtab/mmseek/vqgan/vqgan_imagenet_f16_1024/configs/model.yaml \
+  --ckpt   /mmfs1/gscratch/krishna/mahtab/mmseek/vqgan/vqgan_imagenet_f16_1024/ckpts/last.ckpt \
+  --input  ./image/floor2.png \
+  --outdir ./recons --size 256
+
+
+
+
